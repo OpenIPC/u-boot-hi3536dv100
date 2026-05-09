@@ -278,6 +278,13 @@
 #undef CONFIG_CMD_FAT
 #undef CONFIG_CMD_FS_GENERIC
 #undef CONFIG_CMD_EXT2
+/*
+ * Vendor pulls cmd_vo_hi3536dv100.o (HDMI/VO display driver, big)
+ * and cmd_dec.o (jpeg/h264 decoder helpers) when OSD_ENABLE is set.
+ * Boot path doesn't need either — drop OSD_ENABLE so libcommon.a
+ * stays out of those.
+ */
+#undef CONFIG_OSD_ENABLE
 
 #endif	/* __CONFIG_H */
 
