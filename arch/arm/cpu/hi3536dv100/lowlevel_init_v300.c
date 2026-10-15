@@ -223,6 +223,73 @@ void ddrc_enable_scramble(unsigned int reg)
 	writel(val, reg + 0x50);
 }
 
+/*
+ * Hi3536E: a Hi3536DV100 die that reads back 0x02000000 at SYSCTRL + 0xEE0
+ * (plain DV100 reads 0). Its DDR needs other PLL, DMC timing and PHY
+ * settings than the ones reg_info writes for the DV100 demo board, and with
+ * those the software training fails and resets the chip. The values here
+ * replace them before hardware training; they come from the SPL of a
+ * Xiongmai NBD8010S-KL-V2 NVR, which makes the same check.
+ *
+ * Plain writel() only: this runs from SRAM, where .rodata is not loaded.
+ */
+#define REG_SC_SYSID0		0xee0
+#define HI3536E_SYSID0		0x02000000
+
+static void hi3536e_ddr_config(void)
+{
+	/* APLL, DDR PLL and the PLL at 0x18 */
+	writel(0x010061f4, CRG_REG_BASE + 0x04);
+	writel(0x0000209b, CRG_REG_BASE + 0x2c);
+	writel(0x24000000, CRG_REG_BASE + 0x18);
+	writel(0x0100106c, CRG_REG_BASE + 0x1c);
+
+	/* DMC timing */
+	writel(0x34421a12, DDR_DMC_BASE_REG0 + 0x100);
+	writel(0x4144b48d, DDR_DMC_BASE_REG0 + 0x104);
+	writel(0x54011070, DDR_DMC_BASE_REG0 + 0x108);
+	writel(0xffe32884, DDR_DMC_BASE_REG0 + 0x10c);
+	writel(0x00800000, DDR_DMC_BASE_REG0 + 0x110);
+	writel(0x00041308, DDR_DMC_BASE_REG0 + 0x114);
+
+	/* PHY timing */
+	writel(0xc228ffca, DDR0_PLL_REG + 0x30);
+	writel(0x15405148, DDR0_PLL_REG + 0x34);
+	writel(0x240a4148, DDR0_PLL_REG + 0x38);
+	writel(0xf91002b2, DDR0_PLL_REG + 0x3c);
+	writel(0x000067bc, DDR0_PLL_REG + 0x40);
+	writel(0x00061e14, DDR0_PLL_REG + 0x64);
+	writel(0x00000020, DDR0_PLL_REG + 0x68);
+	writel(0x4bddb001, DDR0_PLL_REG + 0x88);
+	writel(0x00000009, DDR0_PLL_REG + 0xb4);
+	writel(0x10c00588, DDR0_PLL_REG + 0x70);
+	writel(0xff00ae45, DDR0_PLL_REG + 0x8c);
+	writel(0x00000080, DDR0_PLL_REG + 0x18c);
+	writel(0x00000008, DDR0_PLL_REG + 0x120);
+	writel(0x00000008, DDR0_PLL_REG + 0x128);
+	writel(0x00000008, DDR0_PLL_REG + 0x130);
+
+	/* PHY per-lane delays */
+	writel(0x0f100f0e, DDR0_PLL_REG + 0x210);
+	writel(0x0d0d100e, DDR0_PLL_REG + 0x214);
+	writel(0x0000000e, DDR0_PLL_REG + 0x218);
+	writel(0x10100f10, DDR0_PLL_REG + 0x290);
+	writel(0x0e0f1010, DDR0_PLL_REG + 0x294);
+	writel(0x0000000f, DDR0_PLL_REG + 0x298);
+	writel(0x00000000, DDR0_PLL_REG + 0x230);
+	writel(0x00000000, DDR0_PLL_REG + 0x2b0);
+	writel(0x0e0e120f, DDR0_PLL_REG + 0x21c);
+	writel(0x10111011, DDR0_PLL_REG + 0x220);
+	writel(0x00000000, DDR0_PLL_REG + 0x224);
+	writel(0x0e0e0e10, DDR0_PLL_REG + 0x29c);
+	writel(0x0d0f1010, DDR0_PLL_REG + 0x2a0);
+	writel(0x00000000, DDR0_PLL_REG + 0x2a4);
+	writel(0x00000020, DDR0_PLL_REG + 0x22c);
+	writel(0x00000020, DDR0_PLL_REG + 0x2ac);
+	writel(0x00000900, DDR0_PLL_REG + 0x234);
+	writel(0x00000900, DDR0_PLL_REG + 0x2b4);
+}
+
 void start_ddr_training(unsigned int base)
 {
 #ifdef CONFIG_SVB_ENABLE
@@ -230,6 +297,9 @@ void start_ddr_training(unsigned int base)
 	start_svb();
 	delay(10000);
 #endif
+
+	if (readl(SYS_CTRL_REG_BASE + REG_SC_SYSID0) == HI3536E_SYSID0)
+		hi3536e_ddr_config();
 
 	ddr_hw_training();
 
