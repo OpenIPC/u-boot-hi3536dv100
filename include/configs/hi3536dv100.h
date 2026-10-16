@@ -109,6 +109,12 @@
 
 #define CONFIG_ENV_SIZE		0x10000    /*include ENV_HEADER_SIZE */
 #define CONFIG_ENV_SECT_SIZE	CONFIG_ENV_SIZE
+/* NAND only (env_nand.c; env_sf.c ignores it): the span saveenv erases and
+ * writeenv() steps through, skipping bad blocks. Defaulting to ENV_SIZE it
+ * would leave no room to skip even one 128k block. 512k from 0x40000 ends
+ * at 0xc0000, inside OpenIPC's reserved 768k NAND "wtf" partition
+ * (0x40000..0x100000), which holds nothing but the env. */
+#define CONFIG_ENV_RANGE	0x80000
 #define CONFIG_NR_DRAM_BANKS	1          /* we have 1 bank of DRAM */
 /* kernel parameter list phy addr */
 #define CFG_BOOT_PARAMS		(MEM_BASE_DDR + 0x0100)
