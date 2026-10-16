@@ -97,13 +97,17 @@
  * used in file
  *----------------------------------------------------------------------*/
 #include "../../product/env_setup.h"
-/* env in flash instead of CFG_ENV_IS_NOWHERE */
-#define CONFIG_ENV_OFFSET	0x80000      /* environment starts here */
+/* env in flash instead of CFG_ENV_IS_NOWHERE.
+ * OpenIPC's partition (hi-common.h mtdparts): 64k at 0x40000, after the
+ * 256k boot partition. The vendor's 256k at 0x80000 lies inside OpenIPC's
+ * kernel partition, so saveenv (run setnor16m) erased 256k of the kernel;
+ * and defining it here kept hi-common.h's #ifndef values from applying. */
+#define CONFIG_ENV_OFFSET	0x40000      /* environment starts here */
 #define CONFIG_ENV_NAND_ADDR	(CONFIG_ENV_OFFSET)
 #define CONFIG_ENV_SPI_ADDR	(CONFIG_ENV_OFFSET)
 #define CONFIG_CMD_SAVEENV
 
-#define CONFIG_ENV_SIZE		0x40000    /*include ENV_HEADER_SIZE */
+#define CONFIG_ENV_SIZE		0x10000    /*include ENV_HEADER_SIZE */
 #define CONFIG_ENV_SECT_SIZE	CONFIG_ENV_SIZE
 #define CONFIG_NR_DRAM_BANKS	1          /* we have 1 bank of DRAM */
 /* kernel parameter list phy addr */
