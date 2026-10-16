@@ -150,4 +150,12 @@ void env_crc_update (void);
 /* [re]set to the default environment */
 void set_default_env(void);
 
+#ifdef CONFIG_ENV_LEGACY_OFFSET
+/* Load an env saved in the old, larger format at CONFIG_ENV_LEGACY_OFFSET.
+ * rd(off, buf, len) reads len bytes at off within that old env. Returns 0
+ * with env_ptr filled (and re-CRCed at this build's size) only if the old
+ * CRC matches and the variables fit; never writes the flash. */
+int env_import_legacy(int (*rd)(ulong off, void *buf, ulong len));
+#endif
+
 #endif	/* _ENVIRONMENT_H_ */

@@ -217,6 +217,44 @@ uchar *env_get_addr (int index)
 	}
 }
 
+#ifdef CONFIG_ENV_LEGACY_OFFSET
+int env_import_legacy(int (*rd)(ulong off, void *buf, ulong len))
+{
+	static uchar chunk[512];
+	uint32_t want, crc;
+	ulong off, n, i;
+
+	/* old layout: crc32, then CONFIG_ENV_LEGACY_SIZE - 4 bytes of data,
+	 * which must have ended (two NULs) within this build's ENV_SIZE */
+	if (rd(0, &want, sizeof(want)))
+		return 1;
+	if (rd(sizeof(want), env_ptr->data, ENV_SIZE))
+		return 1;
+	crc = crc32(0, env_ptr->data, ENV_SIZE);
+	for (off = sizeof(want) + ENV_SIZE; off < CONFIG_ENV_LEGACY_SIZE; off += n) {
+		n = CONFIG_ENV_LEGACY_SIZE - off;
+		if (n > sizeof(chunk))
+			n = sizeof(chunk);
+		if (rd(off, chunk, n))
+			return 1;
+		crc = crc32(crc, chunk, n);
+	}
+	if (crc != want)
+		return 1;
+	for (i = 0; i + 1 < ENV_SIZE; i++)
+		if (env_ptr->data[i] == 0 && env_ptr->data[i + 1] == 0)
+			break;
+	if (i + 1 >= ENV_SIZE)
+		return 1;
+
+	env_ptr->crc = crc32(0, env_ptr->data, ENV_SIZE);
+	printf("*** Using the environment an older U-Boot saved at 0x%08x;\n"
+	       "*** saveenv moves it to 0x%08x\n\n",
+	       CONFIG_ENV_LEGACY_OFFSET, CONFIG_ENV_OFFSET);
+	return 0;
+}
+#endif
+
 void set_default_env(void)
 {
 	if (sizeof(default_environment) > ENV_SIZE) {

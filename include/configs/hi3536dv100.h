@@ -115,6 +115,13 @@
  * at 0xc0000, inside OpenIPC's reserved 768k NAND "wtf" partition
  * (0x40000..0x100000), which holds nothing but the env. */
 #define CONFIG_ENV_RANGE	0x80000
+/* Where builds before #2 kept the env (the vendor's place and size).
+ * env_import_legacy() reads it, read-only, when the env here fails its
+ * CRC: on NAND that old env sits in "wtf" next to a working kernel and
+ * would otherwise be lost. On NOR it lay inside the kernel partition, so
+ * there it can only fail the CRC and the defaults apply as before. */
+#define CONFIG_ENV_LEGACY_OFFSET	0x80000
+#define CONFIG_ENV_LEGACY_SIZE		0x40000
 #define CONFIG_NR_DRAM_BANKS	1          /* we have 1 bank of DRAM */
 /* kernel parameter list phy addr */
 #define CFG_BOOT_PARAMS		(MEM_BASE_DDR + 0x0100)
