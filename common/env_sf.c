@@ -161,16 +161,19 @@ void sf_env_relocate_spec(void)
 	return;
 
 err_read:
-	spi_flash_free(env_flash);
-	env_flash = NULL;
-err_probe:
 err_crc:
 #ifdef CONFIG_ENV_LEGACY_OFFSET
-	if (env_flash && env_import_legacy(sf_read_legacy) == 0) {
+	/* Before the read error's cleanup below: the old env may still read. */
+	if (env_import_legacy(sf_read_legacy) == 0) {
 		gd->env_valid = 1;
 		return;
 	}
 #endif
+	if (ret) {
+		spi_flash_free(env_flash);
+		env_flash = NULL;
+	}
+err_probe:
 	puts("*** Warning - bad CRC, using default environment\n\n");
 
 	set_default_env();
