@@ -288,6 +288,39 @@ int readenv (size_t offset, u_char * buf)
 	return 0;
 }
 
+#ifdef CONFIG_ENV_LEGACY_OFFSET
+/* Old writeenv() put the env in good blocks from CONFIG_ENV_LEGACY_OFFSET,
+ * skipping bad ones: map an offset within the old env to its block. */
+static int nand_read_legacy(ulong off, void *buf, ulong len)
+{
+	size_t bs = nand_info[0].erasesize;
+	ulong end = CONFIG_ENV_LEGACY_OFFSET + CONFIG_ENV_LEGACY_SIZE;
+	u_char *p = buf;
+
+	while (len > 0) {
+		ulong want = off / bs, phys = CONFIG_ENV_LEGACY_OFFSET, good = 0;
+		size_t n = bs - off % bs;
+
+		for (;; phys += bs) {
+			if (phys >= end)
+				return 1;
+			if (nand_block_isbad(&nand_info[0], phys))
+				continue;
+			if (good++ == want)
+				break;
+		}
+		if (n > len)
+			n = len;
+		if (nand_read(&nand_info[0], phys + off % bs, &n, p))
+			return 1;
+		p += n;
+		off += n;
+		len -= n;
+	}
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_ENV_OFFSET_REDUND
 void nand_env_relocate_spec (void)
 {
@@ -358,11 +391,13 @@ void nand_env_relocate_spec (void)
 	int ret;
 
 	ret = readenv(CONFIG_ENV_OFFSET, (u_char *) env_ptr);
-	if (ret)
+	if (ret || crc32(0, env_ptr->data, ENV_SIZE) != env_ptr->crc) {
+#ifdef CONFIG_ENV_LEGACY_OFFSET
+		if (env_import_legacy(nand_read_legacy) == 0)
+			return;
+#endif
 		return use_default();
-
-	if (crc32(0, env_ptr->data, ENV_SIZE) != env_ptr->crc)
-		return use_default();
+	}
 #endif /* ! ENV_IS_EMBEDDED */
 }
 #endif /* CONFIG_ENV_OFFSET_REDUND */

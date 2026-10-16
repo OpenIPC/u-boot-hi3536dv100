@@ -21,9 +21,9 @@
     "bootcmdnand=setenv setargs setenv bootargs ${bootargs}; run setargs; nand read ${baseaddr} 0x100000 0x300000; bootm ${baseaddr}\0" \
     "bootcmdubi=setenv setargs setenv bootargs ${bootargsubi}; run setargs; nand read ${baseaddr} 0x100000 0x300000; bootm ${baseaddr}\0" \
     "bootcmdnor=setenv setargs setenv bootargs ${bootargs}; run setargs; sf probe 0; sf read ${baseaddr} 0x50000 0x300000; bootm ${baseaddr}\0" \
-    "setnand=run mtdpartsubi; setenv bootcmd ${bootcmdubi}; saveenv; reset\0" \
-    "setnor8m=run mtdpartsnor8m; setenv bootcmd ${bootcmdnor}; saveenv; reset\0" \
-    "setnor16m=run mtdpartsnor16m; setenv bootcmd ${bootcmdnor}; saveenv; reset\0" \
+    "setnand=run mtdpartsubi; setenv bootcmd ${bootcmdubi}; saveenv && reset\0" \
+    "setnor8m=run mtdpartsnor8m; setenv bootcmd ${bootcmdnor}; saveenv && reset\0" \
+    "setnor16m=run mtdpartsnor16m; setenv bootcmd ${bootcmdnor}; saveenv && reset\0" \
     "osmem=128M\0" \
     "soc="CONFIG_PRODUCTNAME
 

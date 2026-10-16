@@ -133,6 +133,13 @@ int sf_saveenv(void)
 	return ret;
 }
 
+#ifdef CONFIG_ENV_LEGACY_OFFSET
+static int sf_read_legacy(ulong off, void *buf, ulong len)
+{
+	return spi_flash_read(env_flash, CONFIG_ENV_LEGACY_OFFSET + off, len, buf);
+}
+#endif
+
 void sf_env_relocate_spec(void)
 {
 	int ret;
@@ -154,10 +161,19 @@ void sf_env_relocate_spec(void)
 	return;
 
 err_read:
-	spi_flash_free(env_flash);
-	env_flash = NULL;
-err_probe:
 err_crc:
+#ifdef CONFIG_ENV_LEGACY_OFFSET
+	/* Before the read error's cleanup below: the old env may still read. */
+	if (env_import_legacy(sf_read_legacy) == 0) {
+		gd->env_valid = 1;
+		return;
+	}
+#endif
+	if (ret) {
+		spi_flash_free(env_flash);
+		env_flash = NULL;
+	}
+err_probe:
 	puts("*** Warning - bad CRC, using default environment\n\n");
 
 	set_default_env();
